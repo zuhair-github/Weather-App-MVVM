@@ -10,6 +10,7 @@ import UIKit
 class CityCell: UITableViewCell {
     
     lazy var nameLabel = UIFactory.createLabel(textAlignment: .left)
+    lazy var favoriteButton = UIFactory.createButton()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -25,11 +26,19 @@ class CityCell: UITableViewCell {
     
     func setupUI() {
         contentView.addSubview(nameLabel)
+        contentView.addSubview(favoriteButton)
                 
         nameLabel.left(contentView.leftAnchor, constant: 20)
             .centerY(contentView.centerYAnchor)
-            .right(contentView.rightAnchor, constant: 20)
         
+        favoriteButton.left(contentView.rightAnchor, constant: 10)
+            .centerY(contentView.centerYAnchor)
+            .height(24)
+            .width(24)
+            .right(contentView.rightAnchor, constant: -20)
+        
+        favoriteButton.setImage(UIImage(systemName: "heart.fill"), for: .normal)
+        favoriteButton.tintColor = .red
         
         let separator = UIFactory.createSeparatorView()
         contentView.addSubview(separator)

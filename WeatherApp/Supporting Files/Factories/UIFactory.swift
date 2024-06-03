@@ -39,11 +39,19 @@ class UIFactory {
         view.textColor = textColor
         return view
     }
+    
+    static func createButton() -> UIButton {
+        let view = UIButton()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }
+    
     static func createImageView() -> UIImageView {
         let view = UIImageView()
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }
+    
     static func createTableView() -> UITableView {
         let view = UITableView(frame: UIScreen.main.bounds)
         view.translatesAutoresizingMaskIntoConstraints = false

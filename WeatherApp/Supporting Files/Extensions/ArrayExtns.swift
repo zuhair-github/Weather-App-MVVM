@@ -17,9 +17,9 @@ extension Array {
     }
 }
 
-extension Array where Element == String {
+extension Array where Element == City {
     func containsCaseInsensitive(_ newValue: String) -> Bool {
-        let contains = self.contains { $0.compare(newValue, options: .caseInsensitive) == .orderedSame }
+        let contains = self.contains { $0.name.compare(newValue, options: .caseInsensitive) == .orderedSame }
         return contains
     }
 }

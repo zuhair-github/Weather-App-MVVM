@@ -9,10 +9,14 @@ import Foundation
 
 class ViewControllerFactory {
     
-    func createMainView(coordinator: Coordinator) -> MainView {
+    func createHomeTabBarController(coordinator: Coordinator) -> HomeTabBarController {
+        return HomeTabBarController(factory: self, coordinator: coordinator)
+    }
+    
+    func createMainView(coordinator: Coordinator, favorites: Bool) -> MainView {
         let services = createWeatherServices()
-        let cache = createRealmCache()
-        let locationProvider = createLocationProvider()
+        let cache = favorites ? createRealmFavoritesCache() : createRealmCache()
+        let locationProvider = favorites ? nil : createLocationProvider()
         
         let viewModel = MainViewModel(services: services, cache: cache, locationProvider: locationProvider)
         let view = MainView(viewModel: viewModel, coordinator: coordinator)
@@ -46,6 +50,11 @@ class ViewControllerFactory {
     
     private func createRealmCache() -> RealmCache {
         let cache = RealmCache()
+        return cache
+    }
+    
+    private func createRealmFavoritesCache() -> RealmFavoritesCache {
+        let cache = RealmFavoritesCache()
         return cache
     }
     

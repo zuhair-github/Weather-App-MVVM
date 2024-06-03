@@ -16,6 +16,12 @@ extension UIViewController {
         alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
         self.present(alert, animated: true, completion: nil)
     }
+    
+    func inNavigationController() -> UINavigationController {
+        let navC = UINavigationController(rootViewController: self)
+        navC.navigationBar.tintColor = .black
+        return navC
+    }
 }
 
 //MARK: - UIView

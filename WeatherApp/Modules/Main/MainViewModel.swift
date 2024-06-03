@@ -11,10 +11,11 @@ protocol MainViewModelInput {
     func loadData()
     func validateAndAddCity(name cityName: String)
     func removeCity(at index: Int)
+    func toggleFavorite(at index: Int)
 }
 protocol MainViewModelOutput {
-    var cities: Observable<[String]> { get }
-    func city(at index: Int) -> String?
+    var cities: Observable<[City]> { get }
+    func city(at index: Int) -> City?
     func shouldEdit(at index: Int) -> Bool
     var showError: Observable<String> { get }
 }
@@ -29,20 +30,20 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
     
     // MARK: - Private Properties
     private let disposeBag = DisposeBag()
-    private var cachedCities: [String] = []
+    private var cachedCities: [City] = []
     private var currentCity: CurrentCity?
     
-    private let citiesSubjects: PublishSubject<[String]> = PublishSubject<[String]>()
+    private let citiesSubjects: PublishSubject<[City]> = PublishSubject<[City]>()
     private let showErrorSubject = PublishSubject<String>()
     
     
     // MARK: - Init Properties
     private let cache: Cache
     private let services: Services
-    private let locationProvider: LocationProvider
+    private let locationProvider: LocationProvider?
     
     // MARK: - Initializer
-    init(services: Services, cache: Cache, locationProvider: LocationProvider) {
+    init(services: Services, cache: Cache, locationProvider: LocationProvider?) {
         self.services = services
         self.cache = cache
         self.locationProvider = locationProvider
@@ -53,13 +54,13 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
     var output: MainViewModelOutput { self }
     
     // MARK: - Outnput
-    var cities: Observable<[String]> { citiesSubjects.asObservable() }
+    var cities: Observable<[City]> { citiesSubjects.asObservable() }
     
-    func city(at index: Int) -> String? {
+    func city(at index: Int) -> City? {
         var index = index
         if let city = currentCity {
             if index == 0 {
-                return city.name
+                return City.getInstance(name: city.name ?? "", current: true)
             }
             index -= 1
         }
@@ -77,8 +78,7 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
     var showError: Observable<String> { showErrorSubject.asObservable() }
     
     func loadData() {
-        cachedCities = cache.getCities()
-        self.citiesSubjects.onNext(self.cachedCities)
+        reloadData()
         getCurrentLocation()
     }
     
@@ -87,7 +87,8 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
         var cities = cachedCities
         
         if let currentCity = currentCity?.name {
-            cities.insert(currentCity, at: 0)
+            let c = City.getInstance(name: currentCity, current: true)
+            cities.insert(c, at: 0)
         }
         self.citiesSubjects.onNext(cities)
     }
@@ -117,7 +118,17 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
         if currentCity != nil {
             index -= 1
         }
-        if let city = cachedCities.object(at: index), cache.removeCity(name: city) {
+        if let city = cachedCities.object(at: index), cache.removeCity(name: city.name) {
+            reloadData()
+        }
+    }
+    
+    func toggleFavorite(at index: Int) {
+        var index = index
+        if currentCity != nil {
+            index -= 1
+        }
+        if let city = cachedCities.object(at: index), cache.setFavorite(for: city.name, favorite: !city.favorite) {
             reloadData()
         }
     }
@@ -128,7 +139,8 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
     }
     
     func getCurrentLocation() {
-        locationProvider.getCurrentLocation { location, error in
+        guard currentCity == nil else { return }
+        locationProvider?.getCurrentLocation { location, error in
             guard let location = location else { return }
             self.getLocationDetails(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
         }
@@ -141,7 +153,7 @@ class MainViewModel: MainViewModelInput, MainViewModelOutput, MainViewModelType 
                     guard let self, let cityName = data.name else { return }
                     self.currentCity = CurrentCity(name: cityName, latitude: latitude, longitude: longitude)
                     var cities = self.cachedCities
-                    cities.insert(cityName, at: 0)
+                    cities.insert(City.getInstance(name: cityName, current: true), at: 0)
                     self.citiesSubjects.onNext(cities)
                 },
                 onError: {  [weak self] in

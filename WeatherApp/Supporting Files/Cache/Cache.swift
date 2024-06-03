@@ -8,17 +8,20 @@
 import RealmSwift
 
 protocol Cache {
-    func getCities() -> [String]
+    func getCities() -> [City]
     func addCity(name: String)
     func removeCity(name: String) -> Bool
+    func setFavorite(for cityName: String, favorite: Bool) -> Bool
 }
 
+// MARK: - Realm Cache
 class RealmCache: Cache {
-    private let realm = try! Realm()
     
-    func getCities() -> [String] {
+    let realm = try! Realm()
+    
+    func getCities() -> [City] {
         let result = realm.objects(City.self)
-        return result.map { $0.name }
+        return result.map { $0 }
     }
     
     func addCity(name: String) {
@@ -44,4 +47,30 @@ class RealmCache: Cache {
         }
         return false
     }
+    
+    func setFavorite(for cityName: String, favorite: Bool) -> Bool {
+        guard let city = realm.objects(City.self).filter("name == %@", cityName).first else {
+            return false
+        }
+        
+        do {
+            try realm.write {
+                city.favorite = favorite
+            }
+            return true
+        } catch {
+            print("Error updating city: \(error)")
+        }
+        return false
+    }
+}
+
+// MARK: - Favorites Cache
+class RealmFavoritesCache: RealmCache {
+    
+    override func getCities() -> [City] {
+        let result = realm.objects(City.self)
+        return result.filter { $0.favorite }
+    }
+    
 }

@@ -17,6 +17,7 @@ class MainView: UIViewController {
     
     var viewModel: MainViewModelType!
     var coordinator: Coordinator!
+    var showAddButton: Bool = true
     
     private let disposeBag = DisposeBag()
     
@@ -27,12 +28,11 @@ class MainView: UIViewController {
         view.backgroundColor = UIColor.white
         setupUI()
         setupBindings()
-        
-        viewModel.input.loadData()
-        print("[MainView] viewDidLoad")
     }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        
+        viewModel.input.loadData()
     }
     
     init(viewModel: MainViewModelType, coordinator: Coordinator) {
@@ -56,8 +56,10 @@ extension MainView {
             .bottom(view.safeAreaLayoutGuide.bottomAnchor)
         
         tableView.register(CityCell.self, forCellReuseIdentifier: CityCell.identifier)
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "plus.app"), style: .plain, target: self, action: #selector(didTapAddButton))
-        self.title = "Cities"
+        
+        if showAddButton {
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "plus.app"), style: .plain, target: self, action: #selector(didTapAddButton))
+        }
     }
     
     func setupBindings() {
@@ -65,7 +67,18 @@ extension MainView {
             .bind { [weak self] in self?.showErrorAlert(message: $0) }.disposed(by: disposeBag)
         
         viewModel.output.cities.bind(to: tableView.rx.items(cellIdentifier: CityCell.identifier, cellType: CityCell.self)) { index, city, cell in
-            cell.nameLabel.text = city
+            cell.nameLabel.text = city.name
+            if city.current {
+                cell.favoriteButton.setImage(UIImage(systemName: "location"), for: .normal)
+                cell.favoriteButton.isUserInteractionEnabled = false
+                cell.favoriteButton.tintColor = nil
+            } else {
+                cell.favoriteButton.setImage(UIImage(systemName: city.favorite ? "heart.fill" : "heart"), for: .normal)
+                cell.favoriteButton.tintColor = city.favorite ? .red : .gray
+                cell.favoriteButton.tag = index
+                cell.favoriteButton.isUserInteractionEnabled = true
+                cell.favoriteButton.addTarget(self, action: #selector(MainView.didTapFavoriteButton(_:)), for: .touchUpInside)
+            }
         }
         .disposed(by: disposeBag)
         
@@ -74,7 +87,7 @@ extension MainView {
                 self?.viewModel.input.removeCity(at: indexPath.row)
             })
             .disposed(by: disposeBag)
-        
+//        UIImage(systemName: "location")
         tableView.rx.setDelegate(self)
             .disposed(by: disposeBag)
     }
@@ -91,6 +104,10 @@ extension MainView {
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         self.present(alert, animated: true, completion: nil)
     }
+    
+    @objc func didTapFavoriteButton(_ sender: UIButton) {
+        viewModel.input.toggleFavorite(at: sender.tag)
+    }
 }
 
 extension MainView: UITableViewDelegate {
@@ -105,6 +122,6 @@ extension MainView: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         guard let city = viewModel.output.city(at: indexPath.row) else { return }
-        coordinator.showDetailsView(city: city)
+        coordinator.showDetailsView(city: city.name)
     }
 }

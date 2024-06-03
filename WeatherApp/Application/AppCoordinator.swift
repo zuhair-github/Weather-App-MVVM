@@ -25,9 +25,10 @@ class AppCoordinator: Coordinator {
     }
     
     func start() {
-        let view = factory.createMainView(coordinator: self)
-        navigationController = UINavigationController(rootViewController: view)
+        let tabBarController = factory.createHomeTabBarController(coordinator: self)
+        navigationController = UINavigationController(rootViewController: tabBarController)
         navigationController?.navigationBar.tintColor = .black
+        navigationController?.isNavigationBarHidden = true
         window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
     }
@@ -38,6 +39,7 @@ class AppCoordinator: Coordinator {
     
     func showDetailsView(city: String) {
         let view = factory.createDetailsView(coordinator: self, city: city)
+        navigationController?.setNavigationBarHidden(false, animated: true)
         navigationController?.pushViewController(view, animated: true)
     }
     
